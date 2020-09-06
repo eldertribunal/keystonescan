@@ -1,6 +1,8 @@
-# keystonescan
+============
+keystonescan
+============
 
-Scan Blizzard API for keystone completed
+Scan Blizzard API for mythic keystone dungeons completed
 
 * Free software: MIT License
 
