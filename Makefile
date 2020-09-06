@@ -39,7 +39,7 @@ lint: ## check style with pylint
 	pylint keystonescan tests
 
 test: ## run tests quickly with the default Python
-	python setup.py test
+	python -m unittest
 
 coverage: ## check code coverage quickly with the default Python
 	coverage run --source keystonescan setup.py test
