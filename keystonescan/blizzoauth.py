@@ -4,7 +4,7 @@ blizzoauth module docstring
 import json
 import datetime
 from datetime import timezone
-from keystonescan import blizzrequest
+from keystonescan.blizzrequest import BlizzardApiRequest
 
 class BlizzOAuth():
     '''
@@ -57,7 +57,7 @@ class BlizzOAuth():
 
 
         # we have a cache miss, call blizzard API and request new access_token
-        token = blizzrequest.oauth_token_client(self.client_id, self.client_secret)
+        token = BlizzardApiRequest.oauth_token_client(self.client_id, self.client_secret)
         token["timestamp"] = now
         with open(self.auth_cache_file, mode="w") as auth_fd:
             cache_entry = {
