@@ -126,8 +126,17 @@ class BlizzardApiRequest:
         '''
         Request a bearer token from blizzard using client credentials
         '''
-        resp = requests.post(cls._api_url_base.format(region, "oauth/token"),
-                data={'grant_type':'client_credentials'}, auth=(client_id, client_secret))
+        if region in (BlizzardRegion.US, BlizzardRegion.EU,):
+            url = "https://{}.battle.net/oauth/token".format(region)
+        elif region in (BlizzardRegion.KR, BlizzardRegion.TW):
+            url = "https://apac.battle.net/oauth/token"
+        elif region == BlizzardRegion.CN:
+            url = "https://www.battlenet.com.cn/oauth/token"
+        else:
+            raise BlizzardInvalidRegionError("unknown region", region)
+
+        resp = requests.post(url, data={'grant_type':'client_credentials'},
+                auth=(client_id, client_secret))
         if resp.status_code == 429:
             raise BlizzardThrottlingError(resp.text, resp.status_code)
         if resp.status_code != 200:
