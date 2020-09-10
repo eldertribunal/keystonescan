@@ -65,9 +65,9 @@ class BlizzardApiRequest:
         }
         resp = requests.get(url, params=params, headers=headers)
         if resp.status_code == 429:
-            raise BlizzardThrottlingError(resp.text, resp.reason, resp.status_code)
+            raise BlizzardThrottlingError(resp.text, resp.reason, resp.status_code, url)
         if resp.status_code != 200:
-            raise BlizzardApiError(resp.text, resp.reason, resp.status_code)
+            raise BlizzardApiError(resp.text, resp.reason, resp.status_code, url)
         return resp.json()
 
     def mythic_keystone_dungeon_index(self, **kwargs):
@@ -82,9 +82,9 @@ class BlizzardApiRequest:
         }
         resp = requests.get(url, params=params, headers=headers)
         if resp.status_code == 429:
-            raise BlizzardThrottlingError(resp.text, resp.status_code)
+            raise BlizzardThrottlingError(resp.text, resp.status_code, url)
         if resp.status_code != 200:
-            raise BlizzardApiError(resp.text, resp.status_code)
+            raise BlizzardApiError(resp.text, resp.status_code, url)
         return resp.json()
 
     def mythic_keystone_dungeon(self, dungeon_id, **kwargs):
@@ -99,9 +99,9 @@ class BlizzardApiRequest:
         }
         resp = requests.get(url, params=params, headers=headers)
         if resp.status_code == 429:
-            raise BlizzardThrottlingError(resp.text, resp.status_code)
+            raise BlizzardThrottlingError(resp.text, resp.status_code, url)
         if resp.status_code != 200:
-            raise BlizzardApiError(resp.text, resp.status_code)
+            raise BlizzardApiError(resp.text, resp.status_code, url)
         return resp.json()
 
     def media_journal_instance(self, journal_id, **kwargs):
@@ -140,5 +140,5 @@ class BlizzardApiRequest:
         if resp.status_code == 429:
             raise BlizzardThrottlingError(resp.text, resp.status_code)
         if resp.status_code != 200:
-            raise BlizzardApiError(resp.text, resp.status_code)
+            raise BlizzardApiError(resp.text, resp.status_code, url)
         return resp.json()
