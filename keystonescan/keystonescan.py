@@ -12,6 +12,7 @@ import copy
 import datetime
 from datetime import timezone
 from datetime import timedelta
+import operator
 
 from keystonescan.blizzoauth import BlizzOAuth
 from keystonescan.blizzrequest import BlizzardApiRequest
@@ -23,6 +24,35 @@ class AuthorizationError(Exception):
     Exception with getting API credentials from access.json
     '''
 
+def get_dungeon_details(blizzapi, mythic_dungeons):
+    '''
+    Pull down dungeon detailed information like the dungeon backgroun image
+    and keystone upgrade times.
+    '''
+    dungeon_details = []
+    for mythic_dungeon in mythic_dungeons:
+        dungeon = blizzapi.mythic_keystone_dungeon(mythic_dungeon["id"])
+        upgrade_times = [str(timedelta(milliseconds=duration))
+                for _, duration in [keystone_upgrades.values()
+                    for keystone_upgrades in dungeon["keystone_upgrades"]]]
+        upgrade_times.sort(reverse=True)
+
+        media = blizzapi.media_journal_instance(dungeon["dungeon"]["id"])
+        tile = None
+        for asset in media["assets"]:
+            if asset["key"] == "tile":
+                tile = asset["value"]
+
+        dungeon_details.append({
+            "name": dungeon["name"],
+            "id": dungeon["id"],
+            "upgrade": upgrade_times,
+            "tile": tile,
+        })
+
+    sorted(dungeon_details, key=operator.itemgetter("id"))
+    return dungeon_details
+
 def get_dungeon_defaults(blizzapi):
     '''
     Pull the current season dungeons and set the level completed to zero.
@@ -32,24 +62,13 @@ def get_dungeon_defaults(blizzapi):
     dungeon_default = []
     mythic_dungeons = blizzapi.mythic_keystone_dungeon_index()
     for mythic_dungeon in mythic_dungeons["dungeons"]:
-        dungeon = blizzapi.mythic_keystone_dungeon(mythic_dungeon["id"])
-        media = blizzapi.media_journal_instance(dungeon["dungeon"]["id"])
-        upgrade_times = [str(timedelta(milliseconds=duration))
-                for _, duration in [keystone_upgrades.values()
-                    for keystone_upgrades in dungeon["keystone_upgrades"]]]
-        upgrade_times.sort(reverse=True)
-        tile = None
-        for asset in media["assets"]:
-            if asset["key"] == "tile":
-                tile = asset["value"]
         dungeon_default.append({
-            "name": dungeon["name"],
+            "name": mythic_dungeon["name"],
             "level": 0,
-            "id": dungeon["id"],
-            "upgrade": upgrade_times,
-            "tile": tile
+            "id": mythic_dungeon["id"],
         })
 
+    sorted(dungeon_default, key=operator.itemgetter("id"))
     return dungeon_default
 
 def scan_completed_keystones(blizzapi, scanned_toons):
@@ -97,7 +116,7 @@ def generate_player_output(output_dir, characters, dungeon_default):
             player_cache[character.player] = copy.deepcopy(dungeon_default)
 
         for dungeon in player_cache[character.player]:
-            dname, dlevel, _, _, _ = dungeon.values()
+            dname, dlevel, _ = dungeon.values()
             if dname in character.keystone and dlevel < character.keystone[dname]:
                 dungeon["level"] = character.keystone[dname]
 
@@ -115,7 +134,7 @@ def generate_character_output(output_dir, characters, dungeon_default):
         character_cache[character.name] = copy.deepcopy(dungeon_default)
 
         for dungeon in character_cache[character.name]:
-            dname, dlevel, _, _, _ = dungeon.values()
+            dname, dlevel, _  = dungeon.values()
             if dname in character.keystone and dlevel < character.keystone[dname]:
                 dungeon["level"] = character.keystone[dname]
 
@@ -125,15 +144,15 @@ def generate_character_output(output_dir, characters, dungeon_default):
                     for character, dungeons in character_cache.items()],
             character_fd, indent=2)
 
-def generate_dungeon_output(output_dir, dungeon_default):
+def generate_dungeon_output(output_dir, dungeon_details):
     '''
     generate_dungeon_output
     '''
     with open(os.path.join(output_dir, "dungeons.json"), mode="w") as dungeon_fd:
-        json.dump(dungeon_default, dungeon_fd, indent=2)
+        json.dump(dungeon_details, dungeon_fd, indent=2)
 
 
-def scan(input_dir, output_dir):
+def scan(input_dir, output_dir, character=False, player=False, dungeon=False):
     '''
     Scan all the characters and write the formatted data to <output_dir>
     '''
@@ -143,11 +162,19 @@ def scan(input_dir, output_dir):
             os.path.join(input_dir, "auth_cache.json")))
 
     dungeon_default = get_dungeon_defaults(blizzapi)
-    characters = scan_completed_keystones(blizzapi, get_toons(input_dir))
 
-    generate_player_output(output_dir, characters, dungeon_default)
-    generate_character_output(output_dir, characters, dungeon_default)
-    generate_dungeon_output(output_dir, dungeon_default)
+    if player or character:
+        characters = scan_completed_keystones(blizzapi, get_toons(input_dir))
+
+    if player:
+        generate_player_output(output_dir, characters, dungeon_default)
+
+    if character:
+        generate_character_output(output_dir, characters, dungeon_default)
+
+    if dungeon:
+        dungeon_details = get_dungeon_details(blizzapi, dungeon_default)
+        generate_dungeon_output(output_dir, dungeon_details)
 
     with open(os.path.join(output_dir, "scanned.json"), mode="w") as scanned_fd:
         json.dump({"timestamp": now}, scanned_fd, indent=2)
