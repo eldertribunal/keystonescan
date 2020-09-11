@@ -7,7 +7,7 @@ import unittest
 from keystonescan import keystonescan
 
 class TestKeystoneScan(unittest.TestCase):
-    """Tests for `{{ cookiecutter.project_slug }}` package."""
+    """Tests for `keystonescan` package."""
 
     def setUp(self):
         """Set up test fixtures, if any."""
