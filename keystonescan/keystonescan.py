@@ -16,6 +16,7 @@ import operator
 
 from keystonescan.blizzoauth import BlizzOAuth
 from keystonescan.blizzrequest import BlizzardApiRequest
+from keystonescan.raideriorequest import RaiderIoApiRequest
 
 from keystonescan import toons
 
@@ -81,6 +82,15 @@ def scan_completed_keystones(blizzapi, scanned_toons):
         toon.get_mythic_keystone(blizzapi)
     return scanned_toons
 
+def scan_weekly_keystones(raiderioapi, scanned_toons):
+    '''
+    Get all toons from `<input_dir>/toons.json and query the blizzard API
+    for keystons complete this week.
+    '''
+    for toon in scanned_toons:
+        toon.get_weekly_keystone(raiderioapi)
+    return scanned_toons
+
 def get_toons(input_dir):
     '''
     Scan `<input_dir>/toons.json` for list of characters to scan.
@@ -104,6 +114,16 @@ def get_api_access_file(input_dir):
 
     return (access["client_id"], access["client_secret"])
 
+def generate_weekly_output(output_dir, characters, dungeon_default):
+    character_cache = {}
+    for character in characters:
+        character_cache[character.name] = character.weekly_completed_keys
+
+    with open(os.path.join(output_dir, "weekly.json"), mode="w") as character_fd:
+        json.dump(
+            [{"name": str.capitalize(character), "dungeons": dungeons}
+                    for character, dungeons in character_cache.items()],
+            character_fd, indent=2)
 
 def generate_player_output(output_dir, characters, dungeon_default):
     '''
@@ -152,7 +172,7 @@ def generate_dungeon_output(output_dir, dungeon_details):
         json.dump(dungeon_details, dungeon_fd, indent=2)
 
 
-def scan(input_dir, output_dir, character=False, player=False, dungeon=False):
+def scan(input_dir, output_dir, character=False, player=False, dungeon=False, weekly=False):
     '''
     Scan all the characters and write the formatted data to <output_dir>
     '''
@@ -175,6 +195,11 @@ def scan(input_dir, output_dir, character=False, player=False, dungeon=False):
     if dungeon:
         dungeon_details = get_dungeon_details(blizzapi, dungeon_default)
         generate_dungeon_output(output_dir, dungeon_details)
+    
+    if weekly:
+        raiderioapi = RaiderIoApiRequest()
+        characters = scan_weekly_keystones(raiderioapi, get_toons(input_dir))
+        generate_weekly_output(output_dir, characters, dungeon_default)
 
     with open(os.path.join(output_dir, "scanned.json"), mode="w") as scanned_fd:
         json.dump({"timestamp": now}, scanned_fd, indent=2)

@@ -14,6 +14,7 @@ def main():
     parser.add_argument("-p", "--player", action="store_true", help="output player data")
     parser.add_argument("-c", "--character", action="store_true", help="output character data")
     parser.add_argument("-d", "--dungeon", action="store_true", help="output dungeon data")
+    parser.add_argument("-w", "--weekly", action="store_true", help="output weekly key data")
     args = parser.parse_args()
 
     return keystonescan.scan(**vars(args))
