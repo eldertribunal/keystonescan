@@ -155,6 +155,5 @@ class BlizzardApiRequest:
             raise BlizzardInvalidRegionError("unknown region", region)
 
         resp = requests.post(url, data={'token':token})
-        print(resp.json())
         return resp.status_code == 200
 
