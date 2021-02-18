@@ -142,3 +142,19 @@ class BlizzardApiRequest:
         if resp.status_code != 200:
             raise BlizzardApiError(resp.text, resp.status_code, url)
         return resp.json()
+
+    @classmethod
+    def oauth_check_token(cls, token, region=BlizzardRegion.US):
+        if region in (BlizzardRegion.US, BlizzardRegion.EU,):
+            url = "https://{}.battle.net/oauth/check_token".format(region)
+        elif region in (BlizzardRegion.KR, BlizzardRegion.TW):
+            url = "https://apac.battle.net/oauth/check_token"
+        elif region == BlizzardRegion.CN:
+            url = "https://www.battlenet.com.cn/oauth/check_token"
+        else:
+            raise BlizzardInvalidRegionError("unknown region", region)
+
+        resp = requests.post(url, data={'token':token})
+        print(resp.json())
+        return resp.status_code == 200
+

@@ -48,7 +48,7 @@ class BlizzOAuth():
                 auth_cache = json.load(auth_fd)
                 if self.client_id in auth_cache:
                     auth_info = auth_cache[self.client_id]
-                    if auth_info["timestamp"] + auth_info["expires_in"] > now:
+                    if BlizzardApiRequest.oauth_check_token(auth_info["access_token"]):
                         return auth_info["access_token"]
         except FileNotFoundError:
             pass
