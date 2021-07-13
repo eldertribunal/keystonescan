@@ -52,7 +52,7 @@ class BlizzardApiRequest:
         self.profile_url_base = self._api_url_base.format(region, "profile/wow")
         self.data_url_base = self._api_url_base.format(region, "data/wow")
 
-    def mythic_keystone_profile_detail(self, toon, season=5, **kwargs):
+    def mythic_keystone_profile_detail(self, toon, season=6, **kwargs):
         '''
         Request a characters mythic keystone times for a specific season.
         '''
