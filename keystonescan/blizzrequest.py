@@ -64,6 +64,12 @@ class BlizzardApiRequest:
             "Battlenet-Namespace" : self.profile_ns,
         }
         resp = requests.get(url, params=params, headers=headers)
+
+        # treat a 404 as missing data for that user.  In the beginning of a season
+        # we can have no data for this specific user.
+        if resp.status_code == 404:
+            return {"best_runs":[]}
+
         if resp.status_code == 429:
             raise BlizzardThrottlingError(resp.text, resp.reason, resp.status_code, url)
         if resp.status_code != 200:
