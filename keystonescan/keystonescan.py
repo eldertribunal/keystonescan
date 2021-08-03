@@ -64,22 +64,28 @@ def get_dungeon_defaults(blizzapi):
     mythic_dungeons = blizzapi.mythic_keystone_dungeon_index()
     for mythic_dungeon in mythic_dungeons["dungeons"]:
         dungeon_default.append({
+            "id": mythic_dungeon["id"],
             "name": mythic_dungeon["name"],
             "level": 0,
-            "id": mythic_dungeon["id"],
+            "duration":0,
+            "rating": {
+                "total": 0,
+                "tyrannical": 0,
+                "fortified": 0
+            }
         })
 
     sorted(dungeon_default, key=operator.itemgetter("id"))
     return dungeon_default
 
-def scan_completed_keystones(blizzapi, scanned_toons):
+def scan_completed_keystones(raiderioapi, scanned_toons):
     '''
     Get all toons from `<input_dir>/toons.json and query the blizzard API
     for all the completed keystones.
     '''
     for toon in scanned_toons:
         print("scanning {}".format(toon))
-        toon.get_mythic_keystone(blizzapi)
+        toon.get_mythic_keystone(raiderioapi)
     return scanned_toons
 
 def scan_weekly_keystones(raiderioapi, scanned_toons):
@@ -136,9 +142,10 @@ def generate_player_output(output_dir, characters, dungeon_default):
             player_cache[character.player] = copy.deepcopy(dungeon_default)
 
         for dungeon in player_cache[character.player]:
-            dname, dlevel, _ = dungeon.values()
-            if dname in character.keystone and dlevel < character.keystone[dname]:
-                dungeon["level"] = character.keystone[dname]
+            if dungeon["name"] in character.keystone and dungeon["level"] < character.keystone[dungeon["name"]]["level"]:
+                dungeon["level"] = character.keystone[dungeon["name"]]["level"]
+                dungeon["duration"] = character.keystone[dungeon["name"]]["duration"]
+                dungeon["rating"] = character.keystone[dungeon["name"]]["rating"]
 
     with open(os.path.join(output_dir, "players.json"), mode="w") as players_fd:
         json.dump(
@@ -154,9 +161,10 @@ def generate_character_output(output_dir, characters, dungeon_default):
         character_cache[character.name] = copy.deepcopy(dungeon_default)
 
         for dungeon in character_cache[character.name]:
-            dname, dlevel, _  = dungeon.values()
-            if dname in character.keystone and dlevel < character.keystone[dname]:
-                dungeon["level"] = character.keystone[dname]
+            if dungeon["name"] in character.keystone:
+                dungeon["level"] = character.keystone[dungeon["name"]]["level"]
+                dungeon["duration"] = character.keystone[dungeon["name"]]["duration"]
+                dungeon["rating"] = character.keystone[dungeon["name"]]["rating"]
 
     with open(os.path.join(output_dir, "characters.json"), mode="w") as character_fd:
         json.dump(
@@ -180,11 +188,12 @@ def scan(input_dir, output_dir, character=False, player=False, dungeon=False, we
 
     blizzapi = BlizzardApiRequest(BlizzOAuth(*get_api_access_file(input_dir),
             os.path.join(input_dir, "auth_cache.json")))
+    raiderioapi = RaiderIoApiRequest()
 
     dungeon_default = get_dungeon_defaults(blizzapi)
 
     if player or character:
-        characters = scan_completed_keystones(blizzapi, get_toons(input_dir))
+        characters = scan_completed_keystones(raiderioapi, get_toons(input_dir))
 
     if player:
         generate_player_output(output_dir, characters, dungeon_default)
@@ -197,7 +206,6 @@ def scan(input_dir, output_dir, character=False, player=False, dungeon=False, we
         generate_dungeon_output(output_dir, dungeon_details)
     
     if weekly:
-        raiderioapi = RaiderIoApiRequest()
         characters = scan_weekly_keystones(raiderioapi, get_toons(input_dir))
         generate_weekly_output(output_dir, characters, dungeon_default)
 

@@ -41,3 +41,43 @@ class RaiderIoApiRequest:
             raise RaiderIoApiError(resp.text, resp.reason, resp.status_code, url)
 
         return resp.json()
+
+    def mythic_plus_best_runs(self, toon, **kwargs):
+        '''
+        Request a characters best dungeon runs.
+        '''
+        url = "{}/characters/profile".format(self.url_base)
+        params = {"region": kwargs.get("region", self.region),
+                  "realm": toon.realm,
+                  "name": toon.name,
+                  "fields": "mythic_plus_best_runs:all"}
+        headers = {
+            "accept": "application/json",
+        }
+        resp = requests.get(url, params=params, headers=headers)
+        if resp.status_code == 429:
+            raise RaiderIoThrottlingError(resp.text, resp.reason, resp.status_code, url)
+        if resp.status_code != 200:
+            raise RaiderIoApiError(resp.text, resp.reason, resp.status_code, url)
+
+        return resp.json()
+
+    def mythic_plus_alternate_runs(self, toon, **kwargs):
+        '''
+        Request a characters second best dungeon runs.
+        '''
+        url = "{}/characters/profile".format(self.url_base)
+        params = {"region": kwargs.get("region", self.region),
+                  "realm": toon.realm,
+                  "name": toon.name,
+                  "fields": "mythic_plus_alternate_runs:all"}
+        headers = {
+            "accept": "application/json",
+        }
+        resp = requests.get(url, params=params, headers=headers)
+        if resp.status_code == 429:
+            raise RaiderIoThrottlingError(resp.text, resp.reason, resp.status_code, url)
+        if resp.status_code != 200:
+            raise RaiderIoApiError(resp.text, resp.reason, resp.status_code, url)
+
+        return resp.json()

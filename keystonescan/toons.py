@@ -38,21 +38,42 @@ class Toon():
         '''
         return (self.realm, self.name)
 
-    def get_mythic_keystone(self, blizzapi):
+    def get_mythic_keystone(self, raiderioapi):
         '''
         get_mythic_keystone
         '''
-        keystone_detail = blizzapi.mythic_keystone_profile_detail(self)
-        for run in keystone_detail["best_runs"]:
-            if run["is_completed_within_time"]:
-                dungeon = run["dungeon"]["name"]
-                self.keystone[dungeon] = run["keystone_level"]
-                self.keystone_details[dungeon] = {
-                    "level": run["keystone_level"],
-                    "duration": run["duration"],
-                    "affixes": [affix["name"] for affix in run["keystone_affixes"]],
-                    "members": [],
+        keystone_best = raiderioapi.mythic_plus_best_runs(self)
+        keystone_alternate = raiderioapi.mythic_plus_alternate_runs(self)
+
+        for run in keystone_best["mythic_plus_best_runs"]:
+            dungeon = run["dungeon"]
+            fort_tyr_affix = str.lower(run["affixes"][0]["name"])
+
+            self.keystone[dungeon] = {
+                "name": dungeon,
+                "level": run["mythic_level"],
+                "duration": run["clear_time_ms"],
+                "rating": {
+                    "fortified": 0,
+                    "tyrannical": 0
                 }
+            }
+            self.keystone[dungeon]["rating"][fort_tyr_affix] = run["score"]
+
+        for run in keystone_alternate["mythic_plus_alternate_runs"]:
+            dungeon = run["dungeon"]
+            fort_tyr_affix = str.lower(run["affixes"][0]["name"])
+
+            self.keystone[dungeon]["rating"][fort_tyr_affix] = run["score"]
+        
+        for dungeon in self.keystone.values():
+            print(dungeon)
+            total = 0
+            if dungeon["rating"]["fortified"] > dungeon["rating"]["tyrannical"]:
+                total = dungeon["rating"]["fortified"] * 1.5 + dungeon["rating"]["tyrannical"] / 2.0
+            else:
+                total = dungeon["rating"]["tyrannical"] * 1.5 + dungeon["rating"]["fortified"] / 2.0
+            dungeon["rating"]["total"] = round(total)
 
     def get_weekly_keystone(self, raiderioapi):
         '''
