@@ -13,10 +13,11 @@ import datetime
 from datetime import timezone
 from datetime import timedelta
 import operator
+import logging
 
 from keystonescan.blizzoauth import BlizzOAuth
 from keystonescan.blizzrequest import BlizzardApiRequest
-from keystonescan.raideriorequest import RaiderIoApiRequest
+from keystonescan.raideriorequest import RaiderIoApiRequest, RaiderIoApiError
 
 from keystonescan import toons
 
@@ -27,7 +28,7 @@ class AuthorizationError(Exception):
 
 def get_dungeon_details(blizzapi, mythic_dungeons):
     '''
-    Pull down dungeon detailed information like the dungeon backgroun image
+    Pull down dungeon detailed information like the dungeon background image
     and keystone upgrade times.
     '''
     dungeon_details = []
@@ -54,26 +55,29 @@ def get_dungeon_details(blizzapi, mythic_dungeons):
     sorted(dungeon_details, key=operator.itemgetter("id"))
     return dungeon_details
 
-def get_dungeon_defaults(blizzapi):
+def get_dungeon_defaults(blizzapi, exclusions=[197, 198, 199, 206, 207, 210]):
     '''
     Pull the current season dungeons and set the level completed to zero.
     This makes sure all toons have the same dungeon order when scanning
     their keystones completed.
+
+    @param exclusions List of dungeon ids to ignore during the scan
     '''
     dungeon_default = []
     mythic_dungeons = blizzapi.mythic_keystone_dungeon_index()
     for mythic_dungeon in mythic_dungeons["dungeons"]:
-        dungeon_default.append({
-            "id": mythic_dungeon["id"],
-            "name": mythic_dungeon["name"],
-            "level": 0,
-            "duration":0,
-            "rating": {
-                "total": 0,
-                "tyrannical": 0,
-                "fortified": 0
-            }
-        })
+        if mythic_dungeon["id"] not in exclusions:
+            dungeon_default.append({
+                "id": mythic_dungeon["id"],
+                "name": mythic_dungeon["name"],
+                "level": 0,
+                "duration":0,
+                "rating": {
+                    "total": 0,
+                    "tyrannical": 0,
+                    "fortified": 0
+                }
+            })
 
     sorted(dungeon_default, key=operator.itemgetter("id"))
     return dungeon_default
@@ -84,8 +88,14 @@ def scan_completed_keystones(raiderioapi, scanned_toons):
     for all the completed keystones.
     '''
     for toon in scanned_toons:
-        print("scanning {}".format(toon))
-        toon.get_mythic_keystone(raiderioapi)
+        logging.info("scanning {}".format(toon))
+        try:
+            toon.get_mythic_keystone(raiderioapi)
+        except RaiderIoApiError as err:
+            if err.args[0] == 400 and err.args[1] == "Bad Request":
+                logging.error(err)
+            else:
+                raise err
     return scanned_toons
 
 def scan_weekly_keystones(raiderioapi, scanned_toons):
@@ -180,10 +190,14 @@ def generate_dungeon_output(output_dir, dungeon_details):
         json.dump(dungeon_details, dungeon_fd, indent=2)
 
 
-def scan(input_dir, output_dir, character=False, player=False, dungeon=False, weekly=False):
+def scan(input_dir, output_dir, character=False, player=False, dungeon=False, weekly=False, debug=False):
     '''
     Scan all the characters and write the formatted data to <output_dir>
     '''
+
+    if debug:
+        logging.getLogger().setLevel(logging.DEBUG)
+
     now = int(datetime.datetime.now(tz=timezone.utc).timestamp())
 
     blizzapi = BlizzardApiRequest(BlizzOAuth(*get_api_access_file(input_dir),

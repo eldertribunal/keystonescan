@@ -4,6 +4,7 @@ toons module docstring
 
 import os
 import json
+import logging
 
 class Toon():
     '''
@@ -17,7 +18,7 @@ class Toon():
         self.realm = realm
         self.name = name
         self.keystone = {}
-        self.keystone_details = {}
+        self.keystone_score = 0
         self.weekly_completed_keys = []
 
     def __repr__(self):
@@ -44,6 +45,10 @@ class Toon():
         '''
         keystone_best = raiderioapi.mythic_plus_best_runs(self)
         keystone_alternate = raiderioapi.mythic_plus_alternate_runs(self)
+        keystone_total_score = raiderioapi.mythic_plus_scores_by_season(self)
+
+        if "mythic_plus_scores_by_season" in keystone_total_score:
+            self.keystone_score = keystone_total_score["mythic_plus_scores_by_season"][0]["scores"]["all"]
 
         for run in keystone_best["mythic_plus_best_runs"]:
             dungeon = run["dungeon"]
@@ -67,7 +72,7 @@ class Toon():
             self.keystone[dungeon]["rating"][fort_tyr_affix] = run["score"]
         
         for dungeon in self.keystone.values():
-            print(dungeon)
+            logging.info(dungeon)
             total = 0
             if dungeon["rating"]["fortified"] > dungeon["rating"]["tyrannical"]:
                 total = dungeon["rating"]["fortified"] * 1.5 + dungeon["rating"]["tyrannical"] / 2.0

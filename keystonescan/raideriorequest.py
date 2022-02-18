@@ -36,9 +36,9 @@ class RaiderIoApiRequest:
         }
         resp = requests.get(url, params=params, headers=headers)
         if resp.status_code == 429:
-            raise RaiderIoThrottlingError(resp.text, resp.reason, resp.status_code, url)
+            raise RaiderIoThrottlingError(resp.status_code, resp.reason, resp.text, url, params)
         if resp.status_code != 200:
-            raise RaiderIoApiError(resp.text, resp.reason, resp.status_code, url)
+            raise RaiderIoApiError(resp.status_code, resp.reason, resp.text, url, params)
 
         return resp.json()
 
@@ -56,9 +56,9 @@ class RaiderIoApiRequest:
         }
         resp = requests.get(url, params=params, headers=headers)
         if resp.status_code == 429:
-            raise RaiderIoThrottlingError(resp.text, resp.reason, resp.status_code, url)
+            raise RaiderIoThrottlingError(resp.status_code, resp.reason, resp.text, url, params)
         if resp.status_code != 200:
-            raise RaiderIoApiError(resp.text, resp.reason, resp.status_code, url)
+            raise RaiderIoApiError(resp.status_code, resp.reason, resp.text, url, params)
 
         return resp.json()
 
@@ -76,8 +76,28 @@ class RaiderIoApiRequest:
         }
         resp = requests.get(url, params=params, headers=headers)
         if resp.status_code == 429:
-            raise RaiderIoThrottlingError(resp.text, resp.reason, resp.status_code, url)
+            raise RaiderIoThrottlingError(resp.status_code, resp.reason, resp.text, url, params)
         if resp.status_code != 200:
-            raise RaiderIoApiError(resp.text, resp.reason, resp.status_code, url)
+            raise RaiderIoApiError(resp.status_code, resp.reason, resp.text, url, params)
+
+        return resp.json()
+
+    def mythic_plus_scores_by_season(self, toon, season="current", **kwargs):
+        '''
+        Request a characters season score.
+        '''
+        url = "{}/characters/profile".format(self.url_base)
+        params = {"region": kwargs.get("region", self.region),
+                  "realm": toon.realm,
+                  "name": toon.name,
+                  "fields": "mythic_plus_scores_by_season:{}".format(season)}
+        headers = {
+            "accept": "application/json",
+        }
+        resp = requests.get(url, params=params, headers=headers)
+        if resp.status_code == 429:
+            raise RaiderIoThrottlingError(resp.status_code, resp.reason, resp.text, url, params)
+        if resp.status_code != 200:
+            raise RaiderIoApiError(resp.status_code, resp.reason, resp.text, url, params)
 
         return resp.json()

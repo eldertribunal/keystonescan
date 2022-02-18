@@ -15,6 +15,7 @@ def main():
     parser.add_argument("-c", "--character", action="store_true", help="output character data")
     parser.add_argument("-d", "--dungeon", action="store_true", help="output dungeon data")
     parser.add_argument("-w", "--weekly", action="store_true", help="output weekly key data")
+    parser.add_argument("-D", "--debug", action="store_true", help="enable debug logging")
     args = parser.parse_args()
 
     return keystonescan.scan(**vars(args))
