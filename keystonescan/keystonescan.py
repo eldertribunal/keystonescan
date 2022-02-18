@@ -197,6 +197,8 @@ def scan(input_dir, output_dir, character=False, player=False, dungeon=False, we
 
     if debug:
         logging.getLogger().setLevel(logging.DEBUG)
+    else:
+        logging.getLogger().setLevel(logging.INFO)
 
     now = int(datetime.datetime.now(tz=timezone.utc).timestamp())
 
