@@ -86,12 +86,15 @@ class Toon():
         '''
         keystone_detail = raiderioapi.mythic_keystone_weekly_highest(self)
 
+        # number of keys you need to complete for 3 vault choices.
+        three_vault_choices=8
+
         for weekly_key in keystone_detail["mythic_plus_weekly_highest_level_runs"]:
             self.weekly_completed_keys.append(weekly_key["mythic_level"])
         self.weekly_completed_keys.sort(reverse=True)
-        self.weekly_completed_keys = self.weekly_completed_keys[:10]
-        padding = min(10, len(self.weekly_completed_keys))
-        self.weekly_completed_keys.extend([0 for n in range(10 - padding)])
+        self.weekly_completed_keys = self.weekly_completed_keys[:three_vault_choices]
+        padding = min(three_vault_choices, len(self.weekly_completed_keys))
+        self.weekly_completed_keys.extend([0 for n in range(three_vault_choices - padding)])
 
     @staticmethod
     def scan(input_dir):
